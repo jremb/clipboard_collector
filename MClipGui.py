@@ -14,8 +14,9 @@ from PyQt5.QtWidgets import (
     QWidget,
     QTextEdit,
     QVBoxLayout,
-    QHBoxLayout,
+    QGridLayout,
     QPushButton,
+    QCheckBox,
 )
 from PyQt5.QtCore import (
     QThread,
@@ -35,8 +36,8 @@ class MainGui(QWidget):
         """Create and set the widgets for the GUI."""
         self.setWindowTitle('Clipboard Collector')
 
-        self.v_layout = QVBoxLayout()
-        self.h_layout = QHBoxLayout()
+        v_layout = QVBoxLayout()
+        g_layout = QGridLayout()
 
         self.text_window = QTextEdit()
         self.text_window.setPlaceholderText('Text copied to clipboard will be pasted here.')
@@ -60,15 +61,20 @@ class MainGui(QWidget):
         self.clear_all = QPushButton('Clear Text Field')
         self.clear_all.clicked.connect(self.clearText)
 
-        self.h_layout.addWidget(self.start_button)
-        self.h_layout.addWidget(self.stop_button)
-        self.h_layout.addWidget(self.copy_all)
-        self.h_layout.addWidget(self.clear_all)
+        self.cb_bullet = QCheckBox('Bullet Points', self)
+        self.cb_bullet.setEnabled(False)
+        self.cb_bullet.stateChanged.connect(self.bulletPoints)
 
-        self.v_layout.addWidget(self.text_window)
-        self.v_layout.addLayout(self.h_layout)
+        g_layout.addWidget(self.start_button, 0, 0)
+        g_layout.addWidget(self.stop_button, 0, 1)
+        g_layout.addWidget(self.copy_all, 0, 2)
+        g_layout.addWidget(self.clear_all, 0, 3)
+        g_layout.addWidget(self.cb_bullet, 1, 0)
 
-        self.setLayout(self.v_layout)
+        v_layout.addWidget(self.text_window)
+        v_layout.addLayout(g_layout)
+
+        self.setLayout(v_layout)
         self.show()
 
     def stopWorker(self):
@@ -80,12 +86,12 @@ class MainGui(QWidget):
         self.stop_button.setEnabled(False)
         self.thread.exit()
 
-
     def startWorker(self):
         """Clears the clipboard of any text that may
         otherwise be unintentionally captured. Begins
         run method of ClipboardExtractor class in a
         separate thread."""
+        self.cb_bullet.setEnabled(True)
         self.clipboard.clear()
         self.thread = QThread()
         self.worker = ClipboardExtractor(self.cursor)
@@ -105,6 +111,9 @@ class MainGui(QWidget):
         self.cursor.movePosition(self.cursor.Start, QTextCursor.KeepAnchor)
         self.cursor.removeSelectedText()
 
+    def bulletPoints(self):
+        self.worker.bp()
+
 
 class ClipboardExtractor(QObject):
     """Watches clipboard for content. If content on clipboard
@@ -113,6 +122,7 @@ class ClipboardExtractor(QObject):
         super().__init__()
         self.threadactive = True
         self.cursor = cursor
+        self.bpActive = False
 
     def run(self):
         """Starts an infinite loop, waiting for content
@@ -120,8 +130,22 @@ class ClipboardExtractor(QObject):
         while self.threadactive:
             if pyperclip.paste() != '':
                 text = pyperclip.paste()
+                if self.bpActive:
+                    lines: list = text.split('\n')
+                    for i in range(len(lines)):
+                        lines[i] = '* ' + lines[i]
+                    text = '\n\n'.join(lines)
+                    pyperclip.copy(text)
                 self.cursor.insertText(text + '\n\n')
                 pyperclip.copy('')
+
+    def bp(self):
+        """Checks if bullet point boole is active.
+        If active, inactivates. If inactive, activates."""
+        if not self.bpActive:
+            self.bpActive = True
+        else:
+            self.bpActive = False
 
     def kill(self):
         """Breaks out of the infinite loop and returns
