@@ -41,6 +41,7 @@ class MainGui(QWidget):
 
         self.text_window = QTextEdit()
         self.text_window.setPlaceholderText('Text copied to clipboard will be pasted here.')
+        self.text_window.setAcceptDrops(True)
         self.text_window_cursor = self.text_window.textCursor()
 
         self.cursor = QTextCursor(self.text_window_cursor)
