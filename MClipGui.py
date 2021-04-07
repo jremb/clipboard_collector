@@ -15,8 +15,10 @@ from PyQt5.QtWidgets import (
     QTextEdit,
     QVBoxLayout,
     QGridLayout,
+    QHBoxLayout,
     QPushButton,
     QCheckBox,
+    QLineEdit
 )
 from PyQt5.QtCore import (
     QThread,
@@ -37,10 +39,12 @@ class MainGui(QWidget):
         self.setWindowTitle('Clipboard Collector')
 
         v_layout = QVBoxLayout()
+        v_2layout = QVBoxLayout()
         g_layout = QGridLayout()
+        h_layout = QHBoxLayout()
 
         self.text_window = QTextEdit()
-        self.text_window.setPlaceholderText('Text copied to clipboard will be pasted here.')
+        self.text_window.setPlaceholderText('Text copied to clipboard will be automatically pasted here.')
         self.text_window.setAcceptDrops(True)
         self.text_window_cursor = self.text_window.textCursor()
 
@@ -66,16 +70,38 @@ class MainGui(QWidget):
         self.cb_bullet.setEnabled(False)
         self.cb_bullet.stateChanged.connect(self.bulletPoints)
 
+        self.cb_custom_prefix = QCheckBox('Custom Prefix', self)
+        self.cb_custom_prefix.setEnabled(False)
+        self.cb_custom_prefix.stateChanged.connect(self.customPrefix)
+
+        self.cb_custom_suffix = QCheckBox('Custom Suffix', self)
+        self.cb_custom_suffix.setEnabled(False)
+        self.cb_custom_suffix.stateChanged.connect(self.customSuffix)
+
+        self.prefix = QLineEdit()
+        self.prefix.setPlaceholderText('Enter prefix here')
+
+        self.suffix = QLineEdit()
+        self.suffix.setPlaceholderText('Enter suffix here')
+
         g_layout.addWidget(self.start_button, 0, 0)
         g_layout.addWidget(self.stop_button, 0, 1)
         g_layout.addWidget(self.copy_all, 0, 2)
         g_layout.addWidget(self.clear_all, 0, 3)
-        g_layout.addWidget(self.cb_bullet, 1, 0)
 
-        v_layout.addWidget(self.text_window)
-        v_layout.addLayout(g_layout)
+        v_layout.addWidget(self.cb_bullet)
+        v_layout.addWidget(self.cb_custom_prefix)
+        v_layout.addWidget(self.prefix)
+        v_layout.addWidget(self.cb_custom_suffix)
+        v_layout.addWidget(self.suffix)
 
-        self.setLayout(v_layout)
+        v_2layout.addWidget(self.text_window)
+        v_2layout.addLayout(g_layout)
+
+        h_layout.addLayout(v_layout)
+        h_layout.addLayout(v_2layout)
+
+        self.setLayout(h_layout)
         self.show()
 
     def stopWorker(self):
@@ -93,6 +119,8 @@ class MainGui(QWidget):
         run method of ClipboardExtractor class in a
         separate thread."""
         self.cb_bullet.setEnabled(True)
+        self.cb_custom_prefix.setEnabled(True)
+        self.cb_custom_suffix.setEnabled(True)
         self.clipboard.clear()
         self.thread = QThread()
         self.worker = ClipboardExtractor(self.cursor)
@@ -115,28 +143,51 @@ class MainGui(QWidget):
     def bulletPoints(self):
         self.worker.bp()
 
+    def customPrefix(self):
+        self.worker.prefix()
+
+    def customSuffix(self):
+        self.worker.suffix()
+
+    def getPrefix(self):
+        return self.prefix.text()
+
+    def getSuffix(self):
+        return self.suffix.text()
+
 
 class ClipboardExtractor(QObject):
     """Watches clipboard for content. If content on clipboard
     pastes content to QTextEdit."""
     def __init__(self, cursor):
         super().__init__()
-        self.threadactive = True
         self.cursor = cursor
+
+        self.threadActive = True
         self.bpActive = False
+        self.prefixActive = False
+        self.suffixActive = False
 
     def run(self):
         """Starts an infinite loop, waiting for content
         to be copied to the clipboard."""
-        while self.threadactive:
+        while self.threadActive:
+            prefix = ''
+            suffix = ''
             if pyperclip.paste() != '':
                 text = pyperclip.paste()
                 if self.bpActive:
-                    lines: list = text.split('\n')
-                    for i in range(len(lines)):
-                        lines[i] = '* ' + lines[i]
-                    text = '\n\n'.join(lines)
-                    pyperclip.copy(text)
+                    prefix = '* '
+                if self.prefixActive:
+                    prefix = prefix + window.getPrefix()
+                if self.suffixActive:
+                    suffix = window.getSuffix()
+                lines: list = text.split('\n')
+                for i in range(len(lines)):
+                    print(prefix)
+                    lines[i] = prefix + lines[i] + suffix
+                text = '\n\n'.join(lines)
+                pyperclip.copy(text)
                 self.cursor.insertText(text + '\n\n')
                 pyperclip.copy('')
 
@@ -148,10 +199,22 @@ class ClipboardExtractor(QObject):
         else:
             self.bpActive = False
 
+    def prefix(self):
+        if not self.prefixActive:
+            self.prefixActive = True
+        else:
+            self.prefixActive = False
+
+    def suffix(self):
+        if not self.suffixActive:
+            self.suffixActive = True
+        else:
+            self.suffixActive = False
+
     def kill(self):
         """Breaks out of the infinite loop and returns
         to MainGUI to kill thread."""
-        self.threadactive = False
+        self.threadActive = False
 
 
 if __name__ == '__main__':
