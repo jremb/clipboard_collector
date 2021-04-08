@@ -4,6 +4,8 @@ Inspired by Al Sweigart's multi-clipboard project in Automate the Boring Stuff. 
 
 Example use case: Start collecting quotes or highlights from an article. When finished, stop process, copy all of the collected clippings onto the clipboard and paste into a program like OneNote, Evernote, or Zotero. Saves time from switching back and forth from source to, say, Zotero note.
 
+The start button must be engaged before the Append Options are enabled.
+
 For Windows: created an .exe with Pyinstaller and installer with NSIS. Cf. Releases sidebar.
 
 # Known issue:
