@@ -1,5 +1,5 @@
 """
-MClipGui.py
+ClipboardCollector.py
 
 Inspired by the multi-clipboard project by Al Sweigart in Automate the Boring Stuff. Uses pyperclip to
 monitor clipboard and pastes its content onto the textfield so that the user can later copy multiple clippings
@@ -18,7 +18,8 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QPushButton,
     QCheckBox,
-    QLineEdit
+    QLineEdit,
+    QLabel,
 )
 from PyQt5.QtCore import (
     QThread,
@@ -26,6 +27,11 @@ from PyQt5.QtCore import (
 )
 from PyQt5.QtGui import QTextCursor
 
+style_settings = """
+QWidget#AppendBar{background-color: #DCDCDC}
+QCheckBox{padding: 1px}
+QLabel{padding: 6px}
+"""
 
 class MainGui(QWidget):
     """The main GUI window containing all the widgets and primary methods."""
@@ -37,9 +43,11 @@ class MainGui(QWidget):
     def initializeUI(self):
         """Create and set the widgets for the GUI."""
         self.setWindowTitle('Clipboard Collector')
+        self.setGeometry(100, 100, 100, 400)
 
-        v_layout = QVBoxLayout()
-        v_2layout = QVBoxLayout()
+        append_layout = QVBoxLayout()
+        #append_layout.setSizeConstraint(10)
+        right_side_layout = QVBoxLayout()
         g_layout = QGridLayout()
         h_layout = QHBoxLayout()
 
@@ -84,22 +92,30 @@ class MainGui(QWidget):
         self.suffix = QLineEdit()
         self.suffix.setPlaceholderText('Enter suffix here')
 
+        self.append_label = QLabel('Append Options')
+
         g_layout.addWidget(self.start_button, 0, 0)
         g_layout.addWidget(self.stop_button, 0, 1)
         g_layout.addWidget(self.copy_all, 0, 2)
         g_layout.addWidget(self.clear_all, 0, 3)
 
-        v_layout.addWidget(self.cb_bullet)
-        v_layout.addWidget(self.cb_custom_prefix)
-        v_layout.addWidget(self.prefix)
-        v_layout.addWidget(self.cb_custom_suffix)
-        v_layout.addWidget(self.suffix)
+        self.left_side_widget = QWidget()
+        self.left_side_widget.setObjectName('AppendBar')
+        self.left_side_widget.setLayout(append_layout)
 
-        v_2layout.addWidget(self.text_window)
-        v_2layout.addLayout(g_layout)
+        append_layout.addWidget(self.append_label)
+        append_layout.addWidget(self.cb_bullet)
+        append_layout.addWidget(self.cb_custom_prefix)
+        append_layout.addWidget(self.prefix)
+        append_layout.addWidget(self.cb_custom_suffix)
+        append_layout.addWidget(self.suffix)
+        append_layout.addStretch()
 
-        h_layout.addLayout(v_layout)
-        h_layout.addLayout(v_2layout)
+        right_side_layout.addWidget(self.text_window)
+        right_side_layout.addLayout(g_layout)
+
+        h_layout.addWidget(self.left_side_widget)
+        h_layout.addLayout(right_side_layout, 1)
 
         self.setLayout(h_layout)
         self.show()
@@ -219,5 +235,6 @@ class ClipboardExtractor(QObject):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setStyleSheet(style_settings)
     window = MainGui()
     sys.exit(app.exec())
