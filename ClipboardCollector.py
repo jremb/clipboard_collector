@@ -25,7 +25,10 @@ from PyQt5.QtCore import (
     QThread,
     QObject,
 )
-from PyQt5.QtGui import QTextCursor
+from PyQt5.QtGui import (
+    QTextCursor,
+    QIcon
+)
 
 style_settings = """
 QWidget#AppendBar{background-color: #DCDCDC}
@@ -37,6 +40,7 @@ class MainGui(QWidget):
     """The main GUI window containing all the widgets and primary methods."""
     def __init__(self):
         super().__init__()
+        self.setWindowIcon(QIcon('./images/icon2.png'))
         self.initializeUI()
 
 
@@ -93,6 +97,7 @@ class MainGui(QWidget):
         self.suffix.setPlaceholderText('Enter suffix here')
 
         self.append_label = QLabel('Append Options')
+        self.append_label.setToolTip("Press 'Start' to enable Append Options.")
 
         g_layout.addWidget(self.start_button, 0, 0)
         g_layout.addWidget(self.stop_button, 0, 1)
